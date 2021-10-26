@@ -49,7 +49,8 @@ def get_pairs(word):
 
 
 class Encoder:
-    def __init__(self, encoder, bpe_merges, errors="replace"):
+    def __init__(self, encoder, bpe_merges, errors="replace",
+     tokenization_type="default"):
         self.encoder = encoder
         self.decoder = {v: k for k, v in self.encoder.items()}
         self.errors = errors  # how to handle errors in decoding
@@ -66,8 +67,14 @@ class Encoder:
             raise ImportError("Please install regex with: pip install regex")
 
         # Should haved added re.IGNORECASE so BPE merges can happen for capitalized versions of contractions
+        if tokenization_type == "default":
+            token_splitting_pattern = r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+        elif tokenization_type == "newlines-only":
+            token_splitting_pattern = r"""[\r\n]+|[^\r\n]+"""
+        else:
+            raise NotImplementedError(f"invalid tokenization type {tokenization_type}")
         self.pat = self.re.compile(
-            r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+            token_splitting_pattern
         )
 
     def bpe(self, token):
@@ -128,7 +135,7 @@ class Encoder:
         return text
 
 
-def get_encoder(encoder_json_path, vocab_bpe_path):
+def get_encoder(encoder_json_path, vocab_bpe_path, tokenization_type="default"):
     with open(encoder_json_path, "r") as f:
         encoder = json.load(f)
     with open(vocab_bpe_path, "r", encoding="utf-8") as f:
@@ -137,4 +144,5 @@ def get_encoder(encoder_json_path, vocab_bpe_path):
     return Encoder(
         encoder=encoder,
         bpe_merges=bpe_merges,
+        tokenization_type=tokenization_type
     )
