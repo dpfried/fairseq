@@ -28,10 +28,11 @@ class GPT2BPEConfig(FairseqDataclass):
 
 @register_bpe("gpt2", dataclass=GPT2BPEConfig)
 class GPT2BPE(object):
-    def __init__(self, cfg):
+    def __init__(self, cfg, tokenization_type="default"):
+        self.cfg = cfg
         encoder_json = file_utils.cached_path(cfg.gpt2_encoder_json)
         vocab_bpe = file_utils.cached_path(cfg.gpt2_vocab_bpe)
-        self.bpe = get_encoder(encoder_json, vocab_bpe)
+        self.bpe = get_encoder(encoder_json, vocab_bpe, tokenization_type=tokenization_type)
 
     def encode(self, x: str) -> str:
         return " ".join(map(str, self.bpe.encode(x)))
@@ -43,3 +44,8 @@ class GPT2BPE(object):
 
     def is_beginning_of_word(self, x: str) -> bool:
         return self.decode(x).startswith(" ")
+
+@register_bpe("gpt2_pretokenization_newlines_only", dataclass=GPT2BPEConfig)
+class GPT2BPEPretokenizationNewlinesOnly(GPT2BPE):
+    def __init__(self, cfg):
+        super().__init__(cfg, tokenization_type="newlines-only")
