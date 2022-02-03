@@ -427,6 +427,9 @@ def load_model_ensemble_and_task(
                 )
 
             if task is None:
+                if cfg.task._name == 'htlm_causally_masked':
+                    cfg.task._name = 'htlm_causally_masked_as_language_model'
+                    cfg.task.sample_break_mode = 'eos'
                 task = tasks.setup_task(cfg.task)
 
             if "task_state" in state:

@@ -381,3 +381,43 @@ class LanguageModelingTask(LegacyFairseqTask):
         """Return the :class:`~fairseq.data.Dictionary` for the language
         model."""
         return self.output_dictionary
+
+BLOCKING_METHOD = ChoiceEnum(["token_block", "html"])
+SENTINEL_SELECTION = ChoiceEnum(["fixed", "poisson"])
+
+
+@dataclass
+class HTLMCausallyMaskedConfig(LanguageModelingConfig):
+    num_sentinel_tokens: int = field(
+        default=512,
+        metadata={"help": ""},
+    )
+    dataset_blocking_method: BLOCKING_METHOD = field(
+        default="html",
+        metadata={
+            "help": "Split datast across random boundaries or html boundaries"
+        },
+    )
+    num_sentinel_tokens: int = field(
+        default=1,
+        metadata={"help": ""},
+    )
+    sentinel_method: SENTINEL_SELECTION = field(
+        default="fixed",
+        metadata={
+            "help": "Whether or not to dynamically sample number of sentinel tokens (masks) to be placed per document"
+        },
+    )
+
+@register_task("htlm_causally_masked_as_language_model", dataclass=HTLMCausallyMaskedConfig)
+class HTLMCausallyMaskedAsLanguageModelTask(LanguageModelingTask):
+    def __init__(self, args, dictionary, output_dictionary=None, targets=None):
+        super().__init__(args, dictionary, output_dictionary, targets)
+        self.sentinel_tokens = []
+        self.sentinel_method = str(args.sentinel_method)
+        for i in range(256 if self.sentinel_method != "fixed" else args.num_sentinel_tokens):
+            self.sentinel_tokens.append(
+                self.dictionary.add_symbol(f"<sentinel:{i}>"))
+
+        self.sentinel_end_token = self.dictionary.add_symbol(f"<eoss>")
+        print(f"dictionary size: {len(self.dictionary)}")
