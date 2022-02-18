@@ -65,7 +65,7 @@ def infill(parts: List[str], model=ours, verbose=False, **kwargs):
     assert isinstance(parts, list)
     infills = []
     if len(parts) == 1:
-        return complete(parts[0])[len(parts[0]):]
+        return complete(parts[0], model=model, **kwargs)[len(parts[0]):]
 
     ids = []
 
@@ -87,10 +87,10 @@ def infill(parts: List[str], model=ours, verbose=False, **kwargs):
             print(part, end="")
             print(f"<sentinel:{sentinel_ix}>", end="")
         with torch.no_grad():
+            # TODO: may be a more efficient way to do this, as this calls the model repeatedly on prefixes
             completion = model.generate([torch.tensor(ids)], **kwargs)[0][0]['tokens'].tolist()
             if completion[-1] == 2:
                 completion = completion[:-1]
-
 
         completion = completion[len(ids):]
 
@@ -139,4 +139,3 @@ def docstring_to_code(**kwargs):
 
 if __name__ == "__main__":
     _ = code_to_docstring(verbose=True, sampling=True, sampling_topp=0.6, temperature=0.6)
-
